@@ -1,13 +1,7 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-/**
- * Created by maxpy on 11/3/2016.
- */
 public class Board {
     int[] size;
     Cell[][] space;
+    int nEpochs = 0;
 
     public Board(int nx, int ny, int init_value) {
         size = new int[] {nx, ny};
@@ -16,6 +10,7 @@ public class Board {
     }
 
     public void initialize(int value) {
+
         for (int i=0; i < size[0]; i++){
             for (int j=0; j < size[1]; j++){
                 int init_value;
@@ -30,7 +25,23 @@ public class Board {
         }
     }
 
-    public void epoch() {
+
+    public int countNeighbours(int i, int j) {
+        int[][] neighbours = {{i-1, j-1}, {i, j-1}, {i+1, j-1},
+                              {i-1,   j}, {i+1,   j},
+                              {i-1, j+1}, {i, j+1}, {i+1, j+1}};
+        int n_neighbours = 0;
+        for (int in=0; in < 8; in++) {
+            int nx = neighbours[in][0];
+            int ny = neighbours[in][1];
+            if (nx != -1 && ny != -1 && nx != size[0] && ny != size[1]) {
+                n_neighbours += this.space[nx][ny].alive ? 1 : 0;
+            }
+        }
+        return n_neighbours;
+    }
+
+    public void evolve() {
 
         Cell[][] new_space = new Cell[size[0]][size[1]];
 
@@ -58,21 +69,7 @@ public class Board {
             }
         }
         this.space = new_space;
-    }
-
-    public int countNeighbours(int i, int j) {
-        int[][] neighbours = {{i-1, j-1}, {i, j-1}, {i+1, j-1},
-                              {i-1,   j}, {i+1,   j},
-                              {i-1, j+1}, {i, j+1}, {i+1, j+1}};
-        int n_neighbours = 0;
-        for (int in=0; in < 8; in++) {
-            int nx = neighbours[in][0];
-            int ny = neighbours[in][1];
-            if (nx != -1 && ny != -1 && nx != size[0] && ny != size[1]) {
-                n_neighbours += this.space[nx][ny].alive ? 1 : 0;
-            }
-        }
-        return n_neighbours;
+        this.nEpochs += 1;
     }
 
     public void show() {
