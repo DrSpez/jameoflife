@@ -10,11 +10,12 @@ public class Game extends Canvas implements Runnable{
     protected static final int MY = 250;
     protected static final int SCALE = 3;
     private static final String TITLE = "Game of Life";
-    private Board board = new Board(MX, MY, -1);
-
+    private Board board = new Board(MX, MY, 0);
 
     private boolean running = false;
-    private boolean paused = true;
+    private boolean paused = false;
+    private boolean showHelp = true;
+
     private Thread thread;
     private Player p;
 
@@ -26,6 +27,7 @@ public class Game extends Canvas implements Runnable{
         addMouseMotionListener(new MouseTracker(this));
         p = new Player(10, 10, this);
         render();
+
     }
 
     private synchronized void start() {
@@ -55,25 +57,33 @@ public class Game extends Canvas implements Runnable{
 
         int key = e.getKeyCode();
 
-        if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
-            p.setX(p.getX() + step);
+        if (!paused) {
+            if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
+                p.setX(p.getX() + step);
+            }
+
+            if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) {
+                p.setX(p.getX() - step);
+            }
+            if (key == KeyEvent.VK_DOWN || key == KeyEvent.VK_S) {
+                p.setY(p.getY() + step);
+            }
+            if (key == KeyEvent.VK_UP || key == KeyEvent.VK_W) {
+                p.setY(p.getY() - step);
+            }
         }
-        else if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) {
-            p.setX(p.getX() - step);
-        }
-        else if (key == KeyEvent.VK_DOWN || key == KeyEvent.VK_S) {
-            p.setY(p.getY() + step);
-        }
-        else if (key == KeyEvent.VK_UP || key == KeyEvent.VK_W) {
-            p.setY(p.getY() - step);
-        }
-        else if (key == KeyEvent.VK_SPACE) {
+        if (key == KeyEvent.VK_SPACE) {
             paused = !paused;
         }
-        else if (key == KeyEvent.VK_R) {
+        if (key == KeyEvent.VK_R) {
             board.initialize(-1);
         }
-
+        if (key == KeyEvent.VK_BACK_SPACE) {
+            board.initialize(0);
+        }
+        if (key == KeyEvent.VK_H) {
+            showHelp = !showHelp;
+        }
     }
 
     protected void keyReleased(KeyEvent e) {
@@ -87,27 +97,30 @@ public class Game extends Canvas implements Runnable{
     protected void mouseDragged(int mx, int my) {
         if (mx >= 0 && mx < MX && my >= 0 && my < MY) {
             board.space[mx][my].alive = true;
-            p.move(mx, my);
+            int[][] cursorNeighbours = board.getNeighbours(mx, my);
+            for (int in = 0; in < 8; in++) {
+                board.space[cursorNeighbours[in][0]][cursorNeighbours[in][1]].alive = true;
+                }
         }
     }
 
     protected void mouseMoved(int mx, int my) {
-            p.move(mx, my);
-        }
+            //p.move(mx, my);
+    }
 
     public void run() {
         init();
 
         long lastTime = System.nanoTime();
-        final double amountOfTicks = 10.0;
+        final double amountOfTicks = 20.0;
         double ns = 1000000000 / amountOfTicks;
         double delta = 0;
         int updates = 0;
         int frames = 0;
         long timer = System.currentTimeMillis();
 
+
         while (running) {
-            if (!paused) {
                 long now = System.nanoTime();
                 delta += (now - lastTime) / ns;
                 lastTime = now;
@@ -116,7 +129,6 @@ public class Game extends Canvas implements Runnable{
                     updates++;
                     delta--;
                 }
-            }
             render();
             frames++;
 
@@ -132,7 +144,10 @@ public class Game extends Canvas implements Runnable{
     }
 
     private void tick() {
-        // Color the image
+        int pColor = new Color(255, 0, 0).getRGB();
+        board.space[p.getX()][p.getY()].alive = false;
+
+        // Paint the world
         for (int ix = 0; ix < MX; ix++){
             for (int iy = 0; iy < MY; iy++){
                 int cAlive = board.space[ix][iy].alive ? 125 : 0;
@@ -142,11 +157,17 @@ public class Game extends Canvas implements Runnable{
             }
         }
 
-        int pColor = new Color(255, 0, 0).getRGB();
+        // Paint the player
         image.setRGB(p.getX(), p.getY(), pColor);
+        int[][] playerNeighbours = board.getNeighbours(p.getX(), p.getY());
+            for (int in = 0; in < 8; in++) {
+                image.setRGB(playerNeighbours[in][0], playerNeighbours[in][1], pColor);
+                }
 
         // Evolve the board
-        board.evolve();
+        if (!paused) {
+            board.evolve();
+        }
     }
 
     private void render() {
@@ -160,7 +181,31 @@ public class Game extends Canvas implements Runnable{
         Graphics g = bs.getDrawGraphics();
         ///////////
         g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
-        ///////////
+
+        if (showHelp){
+            int x_pos = 350;
+            int y_pos = 200;
+            String helpStrings[] = new String[] {"CONTROLS:",
+                                                 "- ARROWS or WASD  =>  MOVE the spaceship",
+                                                 "- LEFT MOUSE button  =>  CREATE life",
+                                                 "- SPACE  =>  PAUSE/CONTINUE the evolution",
+                                                 "- R  =>  INITIALISE a random world",
+                                                 "- BACKSPACE  =>  CLEAR the world",
+                                                 "- H  =>  toggle this HELP message",
+                                                 "",
+                                                 "HINT:",
+                                                 "= You can CREATE LIFE when PAUSED",
+                                                 "= The ship DESTROYS LIFE upon contact"};
+
+            g.setColor(Color.green);
+            g.setFont( new Font("Courier", Font.BOLD, 20));
+            for (int is = 0; is < helpStrings.length; is++) {
+                g.drawString(helpStrings[is], x_pos, y_pos + 40 * is);
+            }
+
+        }
+        //////////
+
         g.dispose();
         bs.show();
     }
@@ -178,7 +223,6 @@ public class Game extends Canvas implements Runnable{
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-
         game.start();
     }
 

@@ -1,7 +1,7 @@
 public class Board {
     int[] size;
     Cell[][] space;
-    int nEpochs = 0;
+    int nEpochs;
 
     public Board(int nx, int ny, int init_value) {
         size = new int[] {nx, ny};
@@ -10,7 +10,7 @@ public class Board {
     }
 
     public void initialize(int value) {
-
+        nEpochs = 0;
         for (int i=0; i < size[0]; i++){
             for (int j=0; j < size[1]; j++){
                 int init_value;
@@ -25,11 +25,8 @@ public class Board {
         }
     }
 
-
     public int countNeighbours(int i, int j) {
-        int[][] neighbours = {{i-1, j-1}, {i, j-1}, {i+1, j-1},
-                              {i-1,   j}, {i+1,   j},
-                              {i-1, j+1}, {i, j+1}, {i+1, j+1}};
+        int[][] neighbours = getNeighbours(i, j);
         int n_neighbours = 0;
         for (int in=0; in < 8; in++) {
             int nx = neighbours[in][0];
@@ -39,6 +36,13 @@ public class Board {
             }
         }
         return n_neighbours;
+    }
+
+    public static int[][] getNeighbours(int i, int j) {
+        int neighbours[][] = new int[][] {{i-1, j-1}, {i, j-1}, {i+1, j-1},
+                                          {i-1,   j}, {i+1,   j},
+                                          {i-1, j+1}, {i, j+1}, {i+1, j+1}};
+        return neighbours;
     }
 
     public void evolve() {
@@ -72,7 +76,7 @@ public class Board {
         this.nEpochs += 1;
     }
 
-    public void show() {
+    public void consoleShow() {
         for (int j=0; j < size[1]; j++) {
             for (int i=0; i < size[0]; i++) {
                 int value = space[i][j].alive ? 1 : 0;
